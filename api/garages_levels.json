@@ -1,0 +1,18 @@
+{
+  "index: 0": {
+    "fullness": "62 %",
+    "name": "South Garage"
+  },
+  "index: 1": {
+    "fullness": "28 %",
+    "name": "North Garage"
+  },
+  "index: 2": {
+    "fullness": "41 %",
+    "name": "West Garage"
+  },
+  "index: 3": {
+    "fullness": "0 %",
+    "name": "South Campus Garage"
+  }
+}
