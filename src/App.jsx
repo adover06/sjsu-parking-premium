@@ -3,6 +3,17 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
+function percentFromGarage(g) {
+  // Accept multiple possible shapes from the API
+  // { fullness: 60 } or { available: 600, total: 1000 }
+  if (typeof g?.fullness === 'number') return Math.round(g.fullness)
+  if (typeof g?.available === 'number' && typeof g?.total === 'number') {
+    if (g.total === 0) return 0
+    return Math.round(((g.total - g.available) / g.total) * 100)
+  }
+  return null
+}
+
 function App() {
   const [garages, setGarages] = useState([])
   const [loading, setLoading] = useState(false)
@@ -17,11 +28,10 @@ function App() {
         const res = await fetch(`${apiBase}/api/garage-levels`)
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
         const data = await res.json()
-        // support object with keys like "index: 0" by taking values
         const list = Array.isArray(data) ? data : Object.values(data || {})
         setGarages(list)
       } catch (err) {
-        setError(err.message)
+        setError(err?.message ?? String(err))
       } finally {
         setLoading(false)
       }
@@ -31,34 +41,65 @@ function App() {
   }, [])
 
   return (
-    <div className="App">
-      <header>
-        <div>
-          <a href="https://vite.dev" target="_blank" rel="noreferrer">
-            <img src={viteLogo} className="logo" alt="Vite logo" />
-          </a>
-          <a href="https://react.dev" target="_blank" rel="noreferrer">
-            <img src={reactLogo} className="logo react" alt="React logo" />
-          </a>
-        </div>
-        <h1>Garage Levels</h1>
-      </header>
+    <div className="App-root">
+      <div className="container">
+        <header className="top">
+          <nav className="nav-left">&larr; HOME</nav>
+          <div className="title">
+            <h1>SJSU Parking Status</h1>
+            <p className="subtitle">Real-time occupancy levels and availability for campus parking garages.</p>
+          </div>
+          <div className="time">{new Date().toLocaleTimeString()}</div>
+        </header>
 
-      <main>
-        {loading && <p>Loading garages…</p>}
-        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+        <main>
+          {loading && <p className="muted">Loading garages…</p>}
+          {error && <p className="error">Error: {error}</p>}
 
-        {!loading && !error && (
-          <ul className="garage-list">
-            {garages.length === 0 && <li>No garages found.</li>}
-            {garages.map((g, i) => (
-              <li key={g?.name || i} className="garage-item">
-                <strong>{g?.name ?? `Garage ${i + 1}`}</strong>: {g?.fullness ?? '—'}
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
+          {!loading && !error && (
+            <div className="grid">
+              {garages.length === 0 && <div className="muted">No garages found.</div>}
+              {garages.map((g, i) => {
+                const name = g?.name ?? g?.label ?? `Garage ${i + 1}`
+                const percent = percentFromGarage(g)
+                const available = g?.available ?? (typeof g?.total === 'number' && typeof percent === 'number' ? Math.round(g.total * (1 - percent / 100)) : null)
+                const total = g?.total ?? null
+                const address = g?.address ?? g?.location ?? ''
+                const maps = g?.maps_url ?? null
+
+                const statusText = (() => {
+                  if (typeof available === 'number' && typeof total === 'number') return `${available} of ${total} spots · ${available > 100 ? 'Plenty of space' : available === 0 ? 'Full' : 'Some spaces'}`
+                  if (typeof percent === 'number') return `${percent}% occupied`
+                  return 'No data'
+                })()
+
+                return (
+                  <article key={name + i} className="card">
+                    <div className="card-header">{name.toUpperCase()}</div>
+                    <div className="card-body">
+                      <div className="percent">
+                        <span className="num">{typeof percent === 'number' ? percent : '—'}</span>
+                        <span className="label">%<span className="small">occupied</span></span>
+                      </div>
+
+                      <div className="meta">{statusText}</div>
+
+                      <div className="progress">
+                        <div className="progress-bar" style={{ width: typeof percent === 'number' ? `${percent}%` : '0%' }} />
+                      </div>
+
+                      {address && <div className="address">{address}</div>}
+                      <div className="card-actions">
+                        <a className="btn" href={maps ?? '#'} target="_blank" rel="noreferrer">OPEN IN MAPS</a>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   )
 }
