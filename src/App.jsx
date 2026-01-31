@@ -6,7 +6,13 @@ import './App.css'
 function percentFromGarage(g) {
   // Accept multiple possible shapes from the API
   // { fullness: 60 } or { available: 600, total: 1000 }
+  // handle numeric fullness
   if (typeof g?.fullness === 'number') return Math.round(g.fullness)
+  // handle fullness as a string like "60 %" or "60%"
+  if (typeof g?.fullness === 'string') {
+    const m = g.fullness.match(/-?\d+(?:\.\d+)?/)
+    if (m) return Math.round(parseFloat(m[0]))
+  }
   if (typeof g?.available === 'number' && typeof g?.total === 'number') {
     if (g.total === 0) return 0
     return Math.round(((g.total - g.available) / g.total) * 100)
@@ -74,23 +80,12 @@ function App() {
                 })()
 
                 return (
-                  <article key={name + i} className="card">
+                  <article key={name + i} className="card simple-card">
                     <div className="card-header">{name.toUpperCase()}</div>
-                    <div className="card-body">
+                    <div className="card-body simple">
                       <div className="percent">
                         <span className="num">{typeof percent === 'number' ? percent : '—'}</span>
-                        <span className="label">%<span className="small">occupied</span></span>
-                      </div>
-
-                      <div className="meta">{statusText}</div>
-
-                      <div className="progress">
-                        <div className="progress-bar" style={{ width: typeof percent === 'number' ? `${percent}%` : '0%' }} />
-                      </div>
-
-                      {address && <div className="address">{address}</div>}
-                      <div className="card-actions">
-                        <a className="btn" href={maps ?? '#'} target="_blank" rel="noreferrer">OPEN IN MAPS</a>
+                        <span className="label">%</span>
                       </div>
                     </div>
                   </article>
